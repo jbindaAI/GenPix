@@ -1,124 +1,86 @@
-from fastapi import FastAPI, Request, Query
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, Form, BackgroundTasks
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
+from openai import OpenAI
+import openai
+import requests
+import uuid
+import time
+import os
+
+client = OpenAI()
 
 app = FastAPI()
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Loading annotations for all dataset
-with open("data/ALL_annotations_df.pkl", "rb") as file:
-    ann_df = pickle.load(file)
 
-with open("data/match_ALL_df.pkl", "rb") as file:
-    match = pickle.load(file)
-
-with open("data/splitted_sets/test_fold_1.pkl", "rb") as file:
-    test_data = pickle.load(file)
-
-# Taking test examples
-PATIENT_IDs = []
-for rec_id in test_data[:13]:
-    nodule_path = ann_df.iloc[rec_id]["path"]
-    nodule_id = int(nodule_path.split(".")[0])
-    record = match[match[2]==nodule_id]
-    patient_id = record[0]
-    PATIENT_IDs.append(patient_id.values[0])
+def clean_expired_images():
+    '''
+    Function deletes expired results.
+    '''
+    EXPIRATION_TIME = 24 # in hours
+    for filename in os.listdir("gen_images"):
+        current_time = time.time()
+        expiry_period_secs = EXPIRATION_TIME * 3600
+        filepath = os.path.join("gen_images", filename)
+        file_creation_time = os.path.getctime(filepath)
+        if current_time - file_creation_time > expiry_period_secs:
+            os.remove(filepath)
+            print(f"Deleted expired image: {filename}")
+    return 1
 
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse(
-        name="home.html", request=request, context={"PATIENT_IDs":PATIENT_IDs})
+        name="home.html", request=request)
 
 
-@app.get("/visualize_scan/{PATIENT_ID}", response_class=HTMLResponse)
-def visualize_scan(request: Request, PATIENT_ID: str, SLC: int=Query(150)):
-    scan_pt = load_dicom_into_tensor(patient_id=PATIENT_ID)
-    max_depth = scan_pt.shape[-1]
-    scan_str = plot_scan(scan_pt=scan_pt, slc=SLC)
+@app.post("/generate", response_class=HTMLResponse)
+async def generate(request: Request,
+                   background_tasks: BackgroundTasks,
+                   prompt: str = Form(),
+                   size: str = Form()
+                   ):
+    try:
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size=size,
+            quality="standard",
+            n=1,
+            )
+        image_url = response.data[0].url
+        image_filename = f"gen_img_{uuid.uuid4()}.png"
+        image_response = requests.get(image_url)
 
-    return templates.TemplateResponse(
-        name="scan_slicer.html", request=request, context={"PATIENT_IDs":PATIENT_IDs,
-                                                    "PATIENT_ID":PATIENT_ID, 
-                                                    "SLC": SLC,
-                                                    "max_depth": max_depth,
-                                                    "scan_plot": scan_str})
+        with open("gen_images/"+image_filename, "wb") as file:
+            file.write(image_response.content)
 
+        context = {
+            "image_url": image_url,
+            "image_filename": image_filename
+            }
 
-@app.get("/extract_nodules/{PATIENT_ID}", response_class=HTMLResponse)
-def extract_nodules(request: Request, PATIENT_ID: str):
-    scan = pl.query(pl.Scan).filter(pl.Scan.patient_id == f"LIDC-IDRI-{PATIENT_ID}").first()
-    nodules = scan.cluster_annotations()
-    NOD_icons_lst, NOD_crops_ref = process_nodules(nodules=nodules, PATIENT_ID=PATIENT_ID)
-    NODULES=zip(NOD_icons_lst, NOD_crops_ref)
-    # caching NODULES to retrieve later:
-    with open("cache/nodules_lst.pkl", "wb") as file:
-        pickle.dump(NODULES, file)
+    except openai.OpenAIError as e:
+        print(e)
+        context = {}
 
-    return templates.TemplateResponse(
-        name="nodules_list.html", request=request, context={"PATIENT_IDs":PATIENT_IDs,
-                                                    "NODULES": NODULES
-                                                    })
+    if len(os.listdir("gen_images/")) > 50:
+        background_tasks.add_task(clean_expired_images)
 
-
-@app.get("/list_nodules/", response_class=HTMLResponse)
-def list_nodules(request: Request):
-    with open("cache/nodules_lst.pkl", "rb") as file:
-        NODULES = pickle.load(file)
-    return templates.TemplateResponse(
-        name="nodules_list.html", request=request, context={"PATIENT_IDs":PATIENT_IDs,
-                                                    "NODULES": NODULES
-                                                    })
+    return templates.TemplateResponse(name="results.html", request=request, context=context)
 
 
-@app.get("/visualize_nodule/{NOD_crop}", response_class=HTMLResponse)
-def visualize_nodule(request: Request, NOD_crop: str, SLC: int=Query(17, gt=-1, le=31)):
-    # when user decide to analyze Nodule, it deletes cached tensors of patients scans other than chosen one.
-    cached_files = os.listdir("cache/")
-    for file in cached_files:
-        if file != "crops" and file != "nodules_lst.pkl":
-            os.remove("cache/"+file)
-    # loading and visualizing nodule
-    original_img = load_img(crop_path=f"cache/crops/{NOD_crop}.pt", crop_view="axial", slice_=SLC, return_both=False, device="cpu")
-    img_str = plot_nodule(original_img)
-
-    # Context to return to Nodule lst:
-    with open("cache/nodules_lst.pkl", "rb") as file:
-        NODULES = pickle.load(file)
-
-    return templates.TemplateResponse(
-        name="nodule_slicer.html", request=request, context={"NOD_crop": NOD_crop,
-                                                             "SLC":SLC,
-                                                             "NODULES": NODULES,
-                                                             "orig_plot": img_str})
-
-
-@app.get("/predict/{NODULE}/{SLICE}", response_class=HTMLResponse)
-def predict(request: Request, NODULE: str, SLICE: int, TASK: str=Query(...)):
-    original_img, attention_map, CDAM_maps, model_output = XMED.model_pipeline(NODULE=NODULE, SLICE=SLICE, TASK=TASK)
-
-    if TASK == "Classification":
-        PREDS = round(model_output, 2)
-        res_str = plot_res_class(maps=[attention_map, CDAM_maps])
-        res_str_att = False
-    else:
-        PREDS = model_output
-        res_str = plot_CDAM_reg(maps=[CDAM_maps], preds=PREDS)
-        res_str_att = plot_att_reg(attention_map=attention_map)
-
-    img_str = plot_nodule(original_img)
-
-    return templates.TemplateResponse(
-        name="nodule_slicer.html", request=request, context={"NOD_crop": NODULE, 
-                                                    "SLC": SLICE, 
-                                                    "TASK": TASK,
-                                                    "PREDS": PREDS,  
-                                                    "orig_plot": img_str, 
-                                                    "res_plot": res_str,
-                                                    "reg_att_plot": res_str_att
-                                                    })
+@app.get("/download_image/{image_filename}")
+def download_image(image_filename: str):
+    return FileResponse(path="gen_images/"+image_filename, 
+                        media_type='image/png',
+                        filename=image_filename,
+                        headers={"Content-Disposition": f"attachment; filename={image_filename}"}
+                        )

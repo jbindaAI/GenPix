@@ -1,3 +1,5 @@
 .env
 venv
 trial.py
+__pycache__
+gen_images/
