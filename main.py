@@ -9,7 +9,13 @@ import openai
 import requests
 import uuid
 import time
+from pathlib import Path
 import os
+
+
+# Creating cache folder:
+Path("gen_images/").mkdir(parents=True, exist_ok=True)
+
 
 client = OpenAI()
 
@@ -21,7 +27,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 def clean_expired_images():
     '''
-    Function deletes expired results.
+    Function deletes expired images.
+    Is activated as a background process when number of images in a cache exceeds 50.
     '''
     EXPIRATION_TIME = 24 # in hours
     for filename in os.listdir("gen_images"):
