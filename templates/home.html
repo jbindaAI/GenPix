@@ -17,7 +17,8 @@
             <header class="d-flex flex-wrap justify-content-between align-items-center py-3 mb-4 border-bottom">
                 <a href="{{ url_for('home') }}"
                     class="d-flex align-items-center mb-3 mb-md-0 text-dark text-decoration-none">
-                    <img src="{{ url_for('static', path='logo_v2.png')}}" class="logo" width="200" alt="logo">
+                    <img src="{{ url_for('static', path='logo.png')}}" class="logo" width="70" alt="logo">
+                    <strong class="ms-2 logo-text">GenPix</strong>
                 </a>
             </header>
         </div>
@@ -46,19 +47,19 @@
                                                 <div class="form-check col-md-12 ms-2">
                                                     <input class="form-check-input" type="radio" name="size" id="size1" value="1024x1024" checked>
                                                     <label class="form-check-label" for="size1">
-                                                        1024x1024
+                                                        1024x1024 (square)
                                                     </label>
                                                   </div>
                                                   <div class="form-check col-md-12 ms-2">
                                                     <input class="form-check-input" type="radio" name="size" id="size2" value="1024x1792">
                                                     <label class="form-check-label" for="size2">
-                                                        1024x1792
+                                                        1024x1792 (vertical)
                                                     </label>
                                                   </div>
                                                   <div class="form-check col-md-12 ms-2">
                                                     <input class="form-check-input" type="radio" name="size" id="size3" value="1792x1024">
                                                     <label class="form-check-label" for="size3">
-                                                        1792x1024
+                                                        1792x1024 (horizontal)
                                                     </label>
                                                   </div>
                                             </div>
@@ -80,11 +81,6 @@
                 <!-- Website footer -->
                 <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4">
                     <p class="col-md-4 mb-0 footer-text"><strong>&copy; 2024 GenPix</strong></p>
-
-                    <a href="/"
-                        class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
-                        <img src="{{ url_for('static', path='logo_v2.png')}}" class="logo" width="200" alt="logo">
-                    </a>
 
                     <ul class="nav col-md-4 justify-content-end">
                         <li class="nav-item"><a href="https://www.linkedin.com/in/bindajakub/" target=”_blank” class="nav-link px-2 footer-link"><strong>Contact</strong></a></li>
