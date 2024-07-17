@@ -4,22 +4,29 @@ body,
 html {
     height: 100%;
     margin: 0;
+    display: flex;
+    flex-direction: column;
 }
+
 .wrapper {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex-grow: 1;
 }
+
 header,
 footer {
     flex-shrink: 0;
     width: 100%;
 }
+
 main {
     flex-grow: 1;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 10px;
+    overflow: auto;
 }
 
 /* Header */
@@ -29,6 +36,25 @@ main {
     color: #333;
     font-family: 'Arial', sans-serif;
     margin-left: 10px;
+}
+
+/* Form Card */
+.card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+}
+
+.card-header,
+.card-body {
+    padding: 10px;
+}
+
+/* Button */
+.bg-custom {
+    background-color: #0AA5DE;
+    border-color: #0793c6;
+    color: #ffffff;
 }
 
 /* Results */
@@ -66,24 +92,22 @@ main {
 }
 
 
-/* FOOTER */
-.footer{
+/* Footer */
+.footer {
     max-height: 50px;
 }
-.footer-text {
-    color: #6c757d;
-}
-.footer-link {
-    color: #6c757d;
-    text-decoration: none;
-}
-.footer-link:hover {
-    color: #343a40;
+
+.footer-text{
+    font-size: 0.875em;
 }
 
-@media (max-width: 576px) {
-    .logo {
-        max-width: 100px;
-        height: auto;
-    }
+.footer-link {
+    color: #0AA5DE;
+    text-decoration: none;
+    font-size: 0.875em;
+    float: right;
+}
+
+.footer-link:hover {
+    color: #0d5ba9;
 }

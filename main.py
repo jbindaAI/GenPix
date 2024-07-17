@@ -52,14 +52,17 @@ def home(request: Request):
 async def generate(request: Request,
                    background_tasks: BackgroundTasks,
                    prompt: str = Form(),
-                   size: str = Form()
+                   size: str = Form(),
+                   style: str = Form(),
+                   quality: str = Form()
                    ):
     try:
         response = client.images.generate(
             model="dall-e-3",
             prompt=prompt,
             size=size,
-            quality="standard",
+            quality=quality,
+            style=style,
             n=1,
             )
         image_url = response.data[0].url

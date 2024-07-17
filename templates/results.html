@@ -14,10 +14,10 @@
     <div class="wrapper">
         <!-- Header with project name (as logo) and link to About page. -->
         <div class="container">
-            <header class="d-flex flex-wrap justify-content-between align-items-center py-3 mb-4 border-bottom">
+            <header class="d-flex flex-wrap justify-content-between align-items-center py-3 border-bottom">
                 <a href="{{ url_for('home') }}"
-                    class="d-flex align-items-center mb-3 mb-md-0 text-dark text-decoration-none">
-                    <img src="{{ url_for('static', path='logo.png')}}" class="logo" width="70" alt="logo">
+                    class="d-flex align-items-center text-dark text-decoration-none">
+                    <img src="{{ url_for('static', path='logo.png')}}" class="logo" width="90" alt="logo">
                     <strong class="ms-2 logo-text">GenPix</strong>
                 </a>
             </header>
@@ -52,16 +52,11 @@
         </main>
 
         <div class="container-fluid" style="background-color: rgb(240, 240, 240);">
-            <div class="container">
-                <!-- Website footer -->
-                <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4">
-                    <p class="col-md-4 mb-0 footer-text"><strong>&copy; 2024 GenPix</strong></p>
-
-                    <ul class="nav col-md-4 justify-content-end">
-                        <li class="nav-item"><a href="https://www.linkedin.com/in/bindajakub/" target=”_blank” class="nav-link px-2 footer-link"><strong>Contact</strong></a></li>
-                    </ul>
-                </footer>
-            </div>
+            <!-- Website footer -->
+            <footer class="d-flex flex-wrap justify-content-between align-items-center py-1">
+                <p class="col-md-4 ms-3 mt-2 footer-text"><strong>&copy; 2024 GenPix</strong></p>
+                <p class="col-md-4 mt-2 justify-content-end"><a href="https://www.linkedin.com/in/bindajakub/" target="_blank" class="footer-link me-3"><strong>Contact</strong></a></p>
+            </footer>
         </div>
     </div>
 
